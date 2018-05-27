@@ -36,10 +36,8 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initFlags)
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	RootCmd.PersistentFlags().StringVarP(&Username, "username", "u", "", "GitHub Username")
-	RootCmd.PersistentFlags().StringVarP(&Date, "date", "d", "", "Date to pull")
+	RootCmd.PersistentFlags().StringVarP(&Username, "username", "u", "", "GitHub username")
+	RootCmd.PersistentFlags().StringVarP(&Date, "date", "d", "", "Date to pull, default is a year ago. Format: YYYY-MM-DD")
 }
 
 func initFlags() {
