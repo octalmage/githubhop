@@ -2,7 +2,9 @@
 
 Uses [GH Archive](https://gharchive.org) to create Timehop for GitHub.
 
-Based on [githop](https://github.com/neonichu/githop) but written in go and uses https://gharchive.org gzipped archives instead of Big Query.
+Based on [githop](https://github.com/neonichu/githop) but written in go and uses the https://gharchive.org gzipped archives instead of Big Query.
+
+This project streams the events for every user from GH Archive and extracts the events relevant to the specified user. This is all done in memory and it usually takes around a minute to make it through a full day of events.
 
 ## Usage
 
