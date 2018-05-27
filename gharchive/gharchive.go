@@ -12,6 +12,8 @@ import (
 	"github.com/remeh/sizedwaitgroup"
 )
 
+// TODO: Add some disk caching.
+
 // DownloadEventsForDay Download GitHub events for a day.
 func DownloadEventsForDay(date time.Time, username string, progress chan bool) []*gabs.Container {
 	channel := make(chan *gabs.Container)

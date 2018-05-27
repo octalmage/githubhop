@@ -3,8 +3,10 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"time"
 
+	"github.com/octalmage/githubhop/github"
 	"github.com/spf13/cobra"
 )
 
@@ -42,12 +44,26 @@ func init() {
 
 func initFlags() {
 	if Username == "" {
-		// TODO: Pull GitHub username using "git config user.email" and curl https://api.github.com/search/users?q=jason@stallin.gs+in:email
-		Username = "octalmage"
+		Username = getGithubUsername()
 	}
 	if Date == "" {
 		now := time.Now()
 		aYearAgo := now.AddDate(-1, 0, -2)
 		Date = aYearAgo.Format("2006-01-02")
 	}
+}
+
+func getGithubUsername() string {
+	cmd := exec.Command("git", "config", "user.email")
+	stdout, err := cmd.Output()
+
+	if err != nil {
+		println(err.Error())
+		return ""
+	}
+
+	email := string(stdout)
+	username, _ := github.GetUsernameForEmail(email)
+
+	return username
 }

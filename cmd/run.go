@@ -33,7 +33,7 @@ func convertEventType(eventType string) string {
 		"ForkEvent":                     "forked the repo",
 		"IssueCommentEvent":             "commented on an issue on",
 		"IssuesEvent":                   "created an issue on",
-		"MemberEvent":                   "was added to the repo",
+		"MemberEvent":                   "were added to the repo",
 		"PullRequestEvent":              "created a PR on",
 		"PullRequestReviewCommentEvent": "commented on a PR on the repo",
 		"PushEvent":                     "pushed commits to",
