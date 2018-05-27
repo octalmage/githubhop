@@ -6,12 +6,35 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
+	"runtime"
 	"time"
 
 	"github.com/Jeffail/gabs"
 	"github.com/gosuri/uiprogress"
+	"github.com/remeh/sizedwaitgroup"
 )
+
+// TODO: Bring in cobra for command line options.
+
+// Convert event_type to english.
+func convertEventType(eventType string) string {
+	var types = map[string]string{
+		"CommitCommentEvent":            "commented a commit on the repo",
+		"CreateEvent":                   "created the",
+		"DeleteEvent":                   "deleted the",
+		"ForkEvent":                     "forked the repo",
+		"IssueCommentEvent":             "commented on an issue on",
+		"IssuesEvent":                   "created an issue on",
+		"MemberEvent":                   "was added to the repo",
+		"PullRequestEvent":              "created a PR on",
+		"PullRequestReviewCommentEvent": "commented on a PR on the repo",
+		"PushEvent":                     "pushed commits to",
+		"ReleaseEvent":                  "published a new release of",
+		"WatchEvent":                    "watched the repo",
+	}
+
+	return types[eventType]
+}
 
 func check(e error) {
 	if e != nil {
@@ -25,17 +48,15 @@ func getUrl(date time.Time) string {
 
 type incr func()
 
-func decodeFromUrl(url string, channel chan *gabs.Container, wg *sync.WaitGroup, done incr) {
+func decodeFromUrl(url string, channel chan *gabs.Container, wg *sizedwaitgroup.SizedWaitGroup, done incr) {
 	defer done()
 	defer wg.Done()
-
 	resp, _ := http.Get(url)
 	defer resp.Body.Close()
 
 	uncompressed_resp, _ := gzip.NewReader(resp.Body)
 
 	dec := json.NewDecoder(uncompressed_resp)
-
 	// Decode event.
 	for dec.More() {
 		parsed, err := gabs.ParseJSONDecoder(dec)
@@ -44,17 +65,16 @@ func decodeFromUrl(url string, channel chan *gabs.Container, wg *sync.WaitGroup,
 
 		if name == "octalmage" {
 			channel <- parsed
-			fmt.Println(name)
 		}
 	}
 }
 
 func main() {
 	now := time.Now()
-	aYearAgo := now.AddDate(-1, -1, 0)
+	aYearAgo := now.AddDate(-1, -2, 0)
 
 	channel := make(chan *gabs.Container)
-	wg := sync.WaitGroup{}
+	wg := sizedwaitgroup.New(runtime.NumCPU())
 
 	hours := 24
 	bar := uiprogress.AddBar(hours).AppendCompleted().PrependElapsed()
@@ -62,29 +82,53 @@ func main() {
 		return fmt.Sprintf("Fetching hours (%d/%d)", b.Current(), hours)
 	})
 
+	var events = []*gabs.Container{}
+	go func() {
+		for event := range channel {
+			events = append(events, event)
+		}
+	}()
+
 	uiprogress.Start()
-	bar.Incr()
-	for hour := 0; hour <= hours-1; hour++ {
+	for hour := 0; hour <= hours; hour++ {
 		dateForUrl := time.Date(aYearAgo.Year(), aYearAgo.Month(), aYearAgo.Day(), hour, 0, 0, 0, aYearAgo.Location())
 		ghUrl := getUrl(dateForUrl)
-		wg.Add(1)
+		wg.Add()
 		go decodeFromUrl(ghUrl, channel, &wg, func() {
 			bar.Incr()
 		})
 	}
 
-	go func() {
-		wg.Wait()
-		uiprogress.Stop()
-		close(channel)
-	}()
+	wg.Wait()
+	close(channel)
+	uiprogress.Stop()
 
-	for item := range channel {
-		fmt.Println(item)
+	for _, event := range events {
+		eventType := event.Path("type").Data().(string)
+		action := convertEventType(eventType)
+
+		if eventType == "CreateEvent" {
+			refType := event.Path("payload.ref_type").Data().(string)
+			ref := event.Path("payload.ref").Data().(string)
+			action += fmt.Sprintf(" %s", refType)
+			if refType != "repository" {
+				action += fmt.Sprintf(" %s on", ref)
+			}
+		}
+
+		if eventType == "DeleteEvent" {
+			refType := event.Path("payload.ref_type").Data().(string)
+			ref := event.Path("payload.ref").Data().(string)
+			action += fmt.Sprintf(" %s %s on", refType, ref)
+		}
+
+		target := event.Path("repo.name").Data().(string)
+
+		fmt.Printf(
+			"At %s, you %s %s\n",
+			event.Path("created_at").Data().(string),
+			action,
+			target,
+		)
 	}
-
-	// io.Copy(os.Stdout, uncompressed_resp)
-	// out, _ := os.Create("output.txt")
-	// defer out.Close()
-	// io.Copy(out, uncompressed_resp)
 }
