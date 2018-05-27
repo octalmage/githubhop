@@ -73,7 +73,7 @@ func decodeFromUrl(url string, channel chan *gabs.Container, wg *sizedwaitgroup.
 
 func main() {
 	now := time.Now()
-	aYearAgo := now.AddDate(-1, 0, -1)
+	aYearAgo := now.AddDate(-1, 0, 0)
 
 	channel := make(chan *gabs.Container)
 
