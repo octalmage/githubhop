@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"runtime"
 	"time"
 
 	"github.com/Jeffail/gabs"
@@ -15,6 +14,8 @@ import (
 )
 
 // TODO: Bring in cobra for command line options.
+// TODO: Better error handling.
+// TODO: Better structure and tests.
 
 // Convert event_type to english.
 func convertEventType(eventType string) string {
@@ -46,9 +47,10 @@ func getUrl(date time.Time) string {
 	return fmt.Sprintf("http://data.gharchive.org/%02d-%02d-%02d-%d.json.gz", date.Year(), int(date.Month()), date.Day(), date.Hour())
 }
 
-type incr func()
+// Callback function for when decodeFromUrl is done.
+type done func()
 
-func decodeFromUrl(url string, channel chan *gabs.Container, wg *sizedwaitgroup.SizedWaitGroup, done incr) {
+func decodeFromUrl(url string, channel chan *gabs.Container, wg *sizedwaitgroup.SizedWaitGroup, done done) {
 	defer done()
 	defer wg.Done()
 	resp, _ := http.Get(url)
@@ -71,10 +73,12 @@ func decodeFromUrl(url string, channel chan *gabs.Container, wg *sizedwaitgroup.
 
 func main() {
 	now := time.Now()
-	aYearAgo := now.AddDate(-1, -2, 0)
+	aYearAgo := now.AddDate(-1, 0, -1)
 
 	channel := make(chan *gabs.Container)
-	wg := sizedwaitgroup.New(runtime.NumCPU())
+
+	// Decided to use sizedwaitgroup since making 24 HTTP requests at once ended up slowing us down.
+	wg := sizedwaitgroup.New(12)
 
 	hours := 24
 	bar := uiprogress.AddBar(hours).AppendCompleted().PrependElapsed()
@@ -82,6 +86,7 @@ func main() {
 		return fmt.Sprintf("Fetching hours (%d/%d)", b.Current(), hours)
 	})
 
+	// Listen to events and add them to our array.
 	var events = []*gabs.Container{}
 	go func() {
 		for event := range channel {
@@ -90,6 +95,7 @@ func main() {
 	}()
 
 	uiprogress.Start()
+	// Start kicking off HTTP requests.
 	for hour := 0; hour <= hours; hour++ {
 		dateForUrl := time.Date(aYearAgo.Year(), aYearAgo.Month(), aYearAgo.Day(), hour, 0, 0, 0, aYearAgo.Location())
 		ghUrl := getUrl(dateForUrl)
@@ -99,6 +105,7 @@ func main() {
 		})
 	}
 
+	// Wait for go routines to finish and close the channel.
 	wg.Wait()
 	close(channel)
 	uiprogress.Stop()
@@ -109,6 +116,7 @@ func main() {
 
 		if eventType == "CreateEvent" {
 			refType := event.Path("payload.ref_type").Data().(string)
+			// TODO: Need to check to make sure thing exists.
 			ref := event.Path("payload.ref").Data().(string)
 			action += fmt.Sprintf(" %s", refType)
 			if refType != "repository" {
@@ -124,9 +132,16 @@ func main() {
 
 		target := event.Path("repo.name").Data().(string)
 
+		// Parse and format the created_at date.
+		layout := "2006-01-02T15:04:05Z"
+		created_at := event.Path("created_at").Data().(string)
+		t, _ := time.Parse(layout, created_at)
+		date := t.Format("2006-01-02 3:04pm")
+
+		// Print a formatted message to the screen.
 		fmt.Printf(
 			"At %s, you %s %s\n",
-			event.Path("created_at").Data().(string),
+			date,
 			action,
 			target,
 		)
