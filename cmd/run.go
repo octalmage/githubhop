@@ -71,6 +71,8 @@ func getEvents(username string, date string) {
 
 	events := gharchive.DownloadEventsForDay(aYearAgo, username, progress)
 
+	uiprogress.Stop()
+
 	for _, event := range events {
 		eventType := event.Path("type").Data().(string)
 		action := convertEventType(eventType)

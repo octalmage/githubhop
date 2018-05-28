@@ -12,6 +12,8 @@ import (
 	"github.com/remeh/sizedwaitgroup"
 )
 
+var gharchiveUrl = "https://data.gharchive.org"
+
 // TODO: Add some disk caching.
 
 // DownloadEventsForDay Download GitHub events for a day.
@@ -31,9 +33,10 @@ func DownloadEventsForDay(date time.Time, username string, progress chan bool) [
 	}()
 
 	// Start kicking off HTTP requests.
-	for hour := 0; hour <= hours; hour++ {
+	for hour := 0; hour <= hours-1; hour++ {
 		dateForUrl := time.Date(date.Year(), date.Month(), date.Day(), hour, 0, 0, 0, date.Location())
 		ghUrl := buildUrl(dateForUrl)
+
 		wg.Add()
 		go decodeFromUrl(ghUrl, username, channel, &wg, func() {
 			progress <- true
@@ -54,7 +57,7 @@ func check(e error) {
 }
 
 func buildUrl(date time.Time) string {
-	return fmt.Sprintf("http://data.gharchive.org/%02d-%02d-%02d-%d.json.gz", date.Year(), int(date.Month()), date.Day(), date.Hour())
+	return fmt.Sprintf("%s/%02d-%02d-%02d-%d.json.gz", gharchiveUrl, date.Year(), int(date.Month()), date.Day(), date.Hour())
 }
 
 // Callback function for when decodeFromUrl is done.
