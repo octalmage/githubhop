@@ -1,4 +1,4 @@
-# githubhop
+# githubhop [![Build Status](https://travis-ci.org/octalmage/githubhop.svg?branch=master)](https://travis-ci.org/octalmage/githubhop)
 
 Uses [GH Archive](https://gharchive.org) to create Timehop for GitHub.
 
