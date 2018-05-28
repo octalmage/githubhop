@@ -21,4 +21,7 @@ before_script:
   - dep ensure
 
 script:
-  - go test -v -race -cover ./...  # Run all the tests with the race detector enabled
+  - go test -v -race -cover -coverprofile=coverage.txt -covermode=atomic ./...
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
