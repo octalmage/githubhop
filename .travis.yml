@@ -1,0 +1,24 @@
+sudo: false
+
+language: go
+
+go:
+  - 1.9.x
+  - 1.x
+
+# Only clone the most recent commit.
+git:
+  depth: 1
+
+install: true
+
+# Don't email me the results of the test runs.
+notifications:
+  email: false
+
+before_script:
+  - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+  - dep ensure
+
+script:
+  - go test -v -race -cover ./...  # Run all the tests with the race detector enabled
