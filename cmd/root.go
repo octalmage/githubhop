@@ -46,7 +46,7 @@ func initFlags() {
 	}
 	if Date == "" {
 		now := time.Now()
-		aYearAgo := now.AddDate(-1, 0, -2)
+		aYearAgo := now.AddDate(-1, 0, 0)
 		Date = aYearAgo.Format("2006-01-02")
 	}
 }

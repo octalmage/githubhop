@@ -2,9 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"os"
 	"time"
 
+	"github.com/Jeffail/gabs"
 	"github.com/gosuri/uiprogress"
 	"github.com/octalmage/githubhop/gharchive"
 	"github.com/spf13/cobra"
@@ -16,7 +19,7 @@ var runCmd = &cobra.Command{
 	Short: "Pull GitHub events from this day last year.",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		getEvents(Username, Date)
+		getEvents(Username, Date, gharchive.DownloadEventsForDay, os.Stdout)
 	},
 }
 
@@ -50,7 +53,9 @@ func check(e error) {
 	}
 }
 
-func getEvents(username string, date string) {
+type EventsGetter func(date time.Time, username string, progress chan bool) []*gabs.Container
+
+func getEvents(username string, date string, eventsgetter EventsGetter, output io.Writer) {
 	aYearAgo, _ := time.Parse("2006-01-02", date)
 
 	hours := 24
@@ -69,7 +74,7 @@ func getEvents(username string, date string) {
 		}
 	}()
 
-	events := gharchive.DownloadEventsForDay(aYearAgo, username, progress)
+	events := eventsgetter(aYearAgo, username, progress)
 
 	uiprogress.Stop()
 
@@ -100,7 +105,8 @@ func getEvents(username string, date string) {
 		date := t.Format("2006-01-02 3:04pm")
 
 		// Print a formatted message to the screen.
-		fmt.Printf(
+		fmt.Fprintf(
+			output,
 			"At %s, you %s %s\n",
 			date,
 			action,
