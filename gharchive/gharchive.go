@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
+	"sort"
 	"time"
 
 	"github.com/Jeffail/gabs"
@@ -17,20 +17,14 @@ var gharchiveUrl = "https://data.gharchive.org"
 
 // TODO: Add some disk caching.
 
-type SafeArray struct {
-	array [][]*gabs.Container
-	m     sync.Mutex
-}
-
 // DownloadEventsForDay Download GitHub events for a day.
 func DownloadEventsForDay(date time.Time, username string, progress chan bool) []*gabs.Container {
-	channel := make(chan []*gabs.Container, 1)
+	// Create buffered channel with a size of 24, since we know we'll have 24 workers.
+	channel := make(chan []*gabs.Container, 24)
 	// Decided to use sizedwaitgroup since making 24 HTTP requests at once ended up slowing us down.
 	wg := sizedwaitgroup.New(12)
 
 	hours := 24
-
-	var events SafeArray
 
 	// Start kicking off HTTP requests.
 	for hour := 0; hour <= hours-1; hour++ {
@@ -40,17 +34,6 @@ func DownloadEventsForDay(date time.Time, username string, progress chan bool) [
 		wg.Add()
 		go decodeFromUrl(ghUrl, username, channel, func() {
 			progress <- true
-
-			// Read if we can.
-			select {
-			case event := <-channel:
-				// Lock array for mutating
-				events.m.Lock()
-				defer events.m.Unlock()
-				events.array = append(events.array, event)
-			default:
-			}
-
 			wg.Done()
 		})
 	}
@@ -59,13 +42,23 @@ func DownloadEventsForDay(date time.Time, username string, progress chan bool) [
 	close(channel)
 	close(progress)
 
-	// Our channel returns [][]*gabs.Container, we want []*gabs.Container.
+	// Pull events from our channel.
 	var flattenedEvents []*gabs.Container
-	for _, eventArray := range events.array {
-		for _, event := range eventArray {
+	for events := range channel {
+		for _, event := range events {
 			flattenedEvents = append(flattenedEvents, event)
 		}
 	}
+
+	// Since events can come back in any order, sort them!
+	sort.Slice(flattenedEvents, func(i, j int) bool {
+		format := "2006-01-02T15:04:05Z"
+		created_at1 := flattenedEvents[i].Path("created_at").Data().(string)
+		created_at2 := flattenedEvents[j].Path("created_at").Data().(string)
+		t1, _ := time.Parse(format, created_at1)
+		t2, _ := time.Parse(format, created_at2)
+		return t1.Before(t2)
+	})
 
 	return flattenedEvents
 }

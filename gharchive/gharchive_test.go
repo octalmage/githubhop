@@ -27,7 +27,7 @@ func TestDownloadEventsForDay(t *testing.T) {
 	events := DownloadEventsForDay(time.Now(), "octalmage", progress)
 
 	if len(events) != 24 {
-		t.Errorf("Did not get 24 events back, go %d", len(events))
+		t.Errorf("Did not get 24 events back, got %d", len(events))
 	}
 }
 
