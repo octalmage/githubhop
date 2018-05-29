@@ -20,7 +20,7 @@ func TestDownloadEventsForDay(t *testing.T) {
 	defer ts.Close()
 
 	// Point gharchive to mock server.
-	gharchiveUrl = ts.URL
+	gharchiveURL = ts.URL
 
 	// Create a buffered channel to prevent blocking, we don't care about checking progress.
 	progress := make(chan bool, 50)

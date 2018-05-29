@@ -13,7 +13,7 @@ import (
 	"github.com/remeh/sizedwaitgroup"
 )
 
-var gharchiveUrl = "https://data.gharchive.org"
+var gharchiveURL = "https://data.gharchive.org"
 
 // TODO: Add some disk caching.
 
@@ -28,11 +28,11 @@ func DownloadEventsForDay(date time.Time, username string, progress chan bool) [
 
 	// Start kicking off HTTP requests.
 	for hour := 0; hour <= hours-1; hour++ {
-		dateForUrl := time.Date(date.Year(), date.Month(), date.Day(), hour, 0, 0, 0, date.Location())
-		ghUrl := buildUrl(dateForUrl)
+		dateForURL := time.Date(date.Year(), date.Month(), date.Day(), hour, 0, 0, 0, date.Location())
+		ghURL := buildURL(dateForURL)
 
 		wg.Add()
-		go decodeFromUrl(ghUrl, username, channel, func() {
+		go decodeFromURL(ghURL, username, channel, func() {
 			progress <- true
 			wg.Done()
 		})
@@ -53,10 +53,10 @@ func DownloadEventsForDay(date time.Time, username string, progress chan bool) [
 	// Since events can come back in any order, sort them!
 	sort.Slice(flattenedEvents, func(i, j int) bool {
 		format := "2006-01-02T15:04:05Z"
-		created_at1 := flattenedEvents[i].Path("created_at").Data().(string)
-		created_at2 := flattenedEvents[j].Path("created_at").Data().(string)
-		t1, _ := time.Parse(format, created_at1)
-		t2, _ := time.Parse(format, created_at2)
+		createdAt1 := flattenedEvents[i].Path("created_at").Data().(string)
+		createdAt2 := flattenedEvents[j].Path("created_at").Data().(string)
+		t1, _ := time.Parse(format, createdAt1)
+		t2, _ := time.Parse(format, createdAt2)
 		return t1.Before(t2)
 	})
 
@@ -69,21 +69,21 @@ func check(e error) {
 	}
 }
 
-func buildUrl(date time.Time) string {
-	return fmt.Sprintf("%s/%02d-%02d-%02d-%d.json.gz", gharchiveUrl, date.Year(), int(date.Month()), date.Day(), date.Hour())
+func buildURL(date time.Time) string {
+	return fmt.Sprintf("%s/%02d-%02d-%02d-%d.json.gz", gharchiveURL, date.Year(), int(date.Month()), date.Day(), date.Hour())
 }
 
 // Callback function for when decodeFromUrl is done.
 type done func()
 
-func decodeFromUrl(url string, username string, channel chan []*gabs.Container, done done) {
+func decodeFromURL(url string, username string, channel chan []*gabs.Container, done done) {
 	defer done()
 	resp, _ := http.Get(url)
 	defer resp.Body.Close()
 
-	uncompressed_resp, _ := gzip.NewReader(resp.Body)
+	uncompressedResp, _ := gzip.NewReader(resp.Body)
 
-	dec := json.NewDecoder(uncompressed_resp)
+	dec := json.NewDecoder(uncompressedResp)
 	var events []*gabs.Container
 	// Decode event.
 	for dec.More() {
