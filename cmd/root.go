@@ -10,7 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Username GitHub username to lookup.
 var Username string
+
+// Date Date to fetch events for.
 var Date string
 
 // RootCmd represents the base command when called without any subcommands

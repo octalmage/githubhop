@@ -14,6 +14,7 @@ import (
 )
 
 var gharchiveURL = "https://data.gharchive.org"
+var CreatedAtFormat = "2006-01-02T15:04:05Z"
 
 // TODO: Add some disk caching.
 
@@ -52,11 +53,8 @@ func DownloadEventsForDay(date time.Time, username string, progress chan bool) [
 
 	// Since events can come back in any order, sort them!
 	sort.Slice(flattenedEvents, func(i, j int) bool {
-		format := "2006-01-02T15:04:05Z"
-		createdAt1 := flattenedEvents[i].Path("created_at").Data().(string)
-		createdAt2 := flattenedEvents[j].Path("created_at").Data().(string)
-		t1, _ := time.Parse(format, createdAt1)
-		t2, _ := time.Parse(format, createdAt2)
+		t1, _ := time.Parse(CreatedAtFormat, flattenedEvents[i].Path("created_at").Data().(string))
+		t2, _ := time.Parse(CreatedAtFormat, flattenedEvents[j].Path("created_at").Data().(string))
 		return t1.Before(t2)
 	})
 

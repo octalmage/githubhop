@@ -5,7 +5,6 @@ import (
 )
 
 // TODO: Better error handling.
-// TODO: Better structure and tests.
 func main() {
 	cmd.Execute()
 }

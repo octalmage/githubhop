@@ -53,8 +53,10 @@ func check(e error) {
 	}
 }
 
+// EventsGetter A function to grab events from GitHub.
 type EventsGetter func(date time.Time, username string, progress chan bool) []*gabs.Container
 
+// TODO: Break the event processing part of this function out.
 func getEvents(username string, date string, eventsgetter EventsGetter, output io.Writer) {
 	aYearAgo, _ := time.Parse("2006-01-02", date)
 
@@ -100,8 +102,8 @@ func getEvents(username string, date string, eventsgetter EventsGetter, output i
 		target := event.Path("repo.name").Data().(string)
 
 		// Parse and format the created_at date.
-		created_at := event.Path("created_at").Data().(string)
-		t, _ := time.Parse("2006-01-02T15:04:05Z", created_at)
+		createdAt := event.Path("created_at").Data().(string)
+		t, _ := time.Parse(gharchive.CreatedAtFormat, createdAt)
 		date := t.Format("2006-01-02 3:04pm")
 
 		// Print a formatted message to the screen.
