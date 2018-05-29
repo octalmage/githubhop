@@ -14,6 +14,8 @@ import (
 )
 
 var gharchiveURL = "https://data.gharchive.org"
+
+// CreatedAtFormat created_at format from GitHub.
 var CreatedAtFormat = "2006-01-02T15:04:05Z"
 
 // TODO: Add some disk caching.
