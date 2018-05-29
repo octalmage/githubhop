@@ -9,6 +9,16 @@ import (
 	"time"
 )
 
+type fakeCache struct {
+}
+
+func (t fakeCache) Get(key string) ([]byte, bool) {
+	return []byte("test"), true
+}
+func (t fakeCache) Set(key string, value []byte) error {
+	return nil
+}
+
 func TestDownloadEventsForDay(t *testing.T) {
 	fakeEvent := `{"type":"WatchEvent","actor":{"login":"octalmage"},"repo":{"name":"octalmage/robotjs"},"payload":{"action":"started"},"created_at":"2015-01-01T15:01:57Z"}`
 
@@ -19,12 +29,14 @@ func TestDownloadEventsForDay(t *testing.T) {
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
+	cache := fakeCache{}
+
 	// Point gharchive to mock server.
 	gharchiveUrl = ts.URL
 
 	// Create a buffered channel to prevent blocking, we don't care about checking progress.
 	progress := make(chan bool, 50)
-	events := DownloadEventsForDay(time.Now(), "octalmage", progress)
+	events := DownloadEventsForDay(time.Now(), "octalmage", cache, progress)
 
 	if len(events) != 24 {
 		t.Errorf("Did not get 24 events back, got %d", len(events))

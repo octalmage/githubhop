@@ -13,12 +13,17 @@ import (
 	"github.com/remeh/sizedwaitgroup"
 )
 
+type Cache interface {
+	Set(key string, value []byte) error
+	Get(key string) ([]byte, bool)
+}
+
 var gharchiveUrl = "https://data.gharchive.org"
 
 // TODO: Add some disk caching.
 
 // DownloadEventsForDay Download GitHub events for a day.
-func DownloadEventsForDay(date time.Time, username string, progress chan bool) []*gabs.Container {
+func DownloadEventsForDay(date time.Time, username string, cache Cache, progress chan bool) []*gabs.Container {
 	// Create buffered channel with a size of 24, since we know we'll have 24 workers.
 	channel := make(chan []*gabs.Container, 24)
 	// Decided to use sizedwaitgroup since making 24 HTTP requests at once ended up slowing us down.
@@ -49,6 +54,18 @@ func DownloadEventsForDay(date time.Time, username string, progress chan bool) [
 			flattenedEvents = append(flattenedEvents, event)
 		}
 	}
+	fmt.Println(flattenedEvents)
+	stringEvents := gabs.New()
+	for _, event := range flattenedEvents {
+		// stringEvents.Index(i).Set(event)
+		stringEvents.ArrayAppend(event.Data())
+	}
+
+	stringEvents.ArrayRemove(0)
+
+	fmt.Println(stringEvents.String())
+
+	cache.Set(date.Format("20060102"), []byte(stringEvents.String()))
 
 	// Since events can come back in any order, sort them!
 	sort.Slice(flattenedEvents, func(i, j int) bool {

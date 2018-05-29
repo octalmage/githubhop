@@ -2,6 +2,21 @@
 
 
 [[projects]]
+  branch = "master"
+  name = "github.com/GitbookIO/diskache"
+  packages = ["."]
+  revision = "bfb81bf58cb175aae4d7a00db59237f7c42c612d"
+
+[[projects]]
+  name = "github.com/GitbookIO/syncgroup"
+  packages = [
+    ".",
+    "quickhash"
+  ]
+  revision = "fa1bffcc8e3e62a3c3c85c9682c2a40a1cfbe38b"
+  version = "0.2.0"
+
+[[projects]]
   name = "github.com/Jeffail/gabs"
   packages = ["."]
   revision = "7a0fed31069aba77993a518cc2f37b28ee7aa883"
@@ -73,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "33c5db204a769ac7ffcf967124b4195645c9a5707fbbcbfe849dc75daa02b5ba"
+  inputs-digest = "9412816b8b17dad036984a8d1c81f47243b5a3cb0c03fd4d83cf178cdcba3e08"
   solver-name = "gps-cdcl"
   solver-version = 1

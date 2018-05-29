@@ -7,12 +7,13 @@ import (
 	"time"
 
 	"github.com/Jeffail/gabs"
+	"github.com/octalmage/githubhop/gharchive"
 )
 
 func TestRunCommand(t *testing.T) {
 	fakeEvent := `{"type":"WatchEvent","actor":{"login":"octalmage"},"repo":{"name":"octalmage/robotjs"},"payload":{"action":"started"},"created_at":"2015-01-01T15:01:57Z"}`
 
-	testGetter := func(date time.Time, username string, progress chan bool) []*gabs.Container {
+	testGetter := func(date time.Time, username string, _ gharchive.Cache, progress chan bool) []*gabs.Container {
 		event, _ := gabs.ParseJSON([]byte(fakeEvent))
 		progress <- true
 		events := []*gabs.Container{event}
@@ -20,7 +21,6 @@ func TestRunCommand(t *testing.T) {
 	}
 
 	var buffer bytes.Buffer
-
 	getEvents("octalmage", "2015-01-01", testGetter, &buffer)
 	output := buffer.String()
 

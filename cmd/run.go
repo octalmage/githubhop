@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/GitbookIO/diskache"
 	"github.com/Jeffail/gabs"
 	"github.com/gosuri/uiprogress"
 	"github.com/octalmage/githubhop/gharchive"
@@ -53,7 +54,7 @@ func check(e error) {
 	}
 }
 
-type EventsGetter func(date time.Time, username string, progress chan bool) []*gabs.Container
+type EventsGetter func(date time.Time, username string, cache gharchive.Cache, progress chan bool) []*gabs.Container
 
 func getEvents(username string, date string, eventsgetter EventsGetter, output io.Writer) {
 	aYearAgo, _ := time.Parse("2006-01-02", date)
@@ -65,6 +66,11 @@ func getEvents(username string, date string, eventsgetter EventsGetter, output i
 		return fmt.Sprintf("Fetching hours (%d/%d)", b.Current(), hours)
 	})
 
+	opts := diskache.Opts{
+		Directory: os.TempDir(),
+	}
+	dc, _ := diskache.New(&opts)
+
 	uiprogress.Start()
 
 	progress := make(chan bool)
@@ -74,7 +80,7 @@ func getEvents(username string, date string, eventsgetter EventsGetter, output i
 		}
 	}()
 
-	events := eventsgetter(aYearAgo, username, progress)
+	events := eventsgetter(aYearAgo, username, dc, progress)
 
 	uiprogress.Stop()
 
