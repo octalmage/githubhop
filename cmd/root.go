@@ -55,6 +55,8 @@ func initFlags() {
 }
 
 func getGithubUsername() string {
+	// TODO: Add tests for getGithubUsername
+	// BODY: Should be possible using: https://github.com/golang/go/blob/06b326054dc0cad03b7b848d8516a578dd8b559f/src/os/exec/exec_test.go#L33
 	cmd := exec.Command("git", "config", "user.email")
 	stdout, err := cmd.Output()
 
