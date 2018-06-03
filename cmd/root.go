@@ -45,6 +45,7 @@ func init() {
 
 func initFlags() {
 	if Username == "" {
+		// TODO: We should terminate the program if we can't infer a GitHub username.
 		Username = getGithubUsername()
 	}
 	if Date == "" {
